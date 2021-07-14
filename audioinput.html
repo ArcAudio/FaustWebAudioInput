@@ -35,7 +35,7 @@ var audioinput_dsp = null; // this was osc_dsp
 const audioElement = document.querySelector('audiotest'); // audio track id is audiotest above
 const track = audio_context.createMediaElementSource(audioElement);
 
-track.connect(audio_context.destination); // track connect to faust destination?
+//track.connect(audio_context.destination); // track connect to faust destination?
 // track.connct faust_node? then faust connect to destination I have no clue what is happening
  // select our play button
  const playButton = document.querySelector('button');
@@ -117,7 +117,7 @@ function startosc()
                             console.log(audioinput_dsp.getParams());
 
                             // Do I connect the track to faust here?
-
+                            track.connect(audioinput_dsp); // track connect to faust destination?
                             // Connect it to output as a regular WebAudio node
                             audioinput_dsp.connect(audio_context.destination);
                       });
