@@ -1,17 +1,22 @@
 <html>
 <head>
 <H1> Faust generated WebAudio node </H1>
+
+<H2> This demo is to highlight how to hook up an audio file into a web audio context </H2>
 </head>
 <body>
       
 <P> Trem freq:
-<input type="range" oninput="changeTFreq(event) "min="20" max="500" value="100" step="10"/>
+<input type="range" oninput="changeTFreq(event) "min="0" max="20" value="20" step="0.1"/>
 <P> Trem depth:
 <input type="range" oninput="changeTDepth(event) "min="0" max="1" value="0" step="0.1"/>    
 
-<audio id="audiotest" controls="">
-    <source src="test.mp3" type="audio/mpeg">
+<audio src="test.mp3">
 </audio>
+
+<button data-playing="false" role="switch" aria-checked="false">
+    <span>Play/Pause</span>
+</button>
 
 <!-- Load 'faust2wasm' script generated .js file -->
 <script src="audioinput.js"></script>
@@ -24,29 +29,21 @@ if (typeof (WebAssembly) === "undefined") {
 
 var isWebKitAudio = (typeof (webkitAudioContext) !== "undefined");
 var audio_context = (isWebKitAudio) ? new webkitAudioContext({ latencyHint: 0.00001 }) : new AudioContext({ latencyHint: 0.00001 });
+
 audio_context.destination.channelInterpretation = "discrete";
-// as audio_context is already instantiated and mapped, do we need another audioContext below?
-var audioinput_dsp = null; // this was osc_dsp
+var audioinput_dsp = null; // this was adapted from osc_dsp
 
-//var audioContext = window.AudioContext || window.webkitAudioContext;
-
-//var audioContext = new AudioContext();
-// Do i need to do this part somewhere else? Seems off/broken, not working though looks like example on WebAudio API
-const audioElement = document.querySelector('audiotest'); // audio track id is audiotest above
-const track = audio_context.createMediaElementSource(audioElement);
-
-//track.connect(audio_context.destination); // track connect to faust destination?
-// track.connct faust_node? then faust connect to destination I have no clue what is happening
- // select our play button
- const playButton = document.querySelector('button');
+const audioElement = document.querySelector('audio'); // audio track id is audiotest above
+const track = audio_context.createMediaElementSource(audioElement); // track set up via audio_ctx.createMediaElement
+ 
+const playButton = document.querySelector('button');
 
  playButton.addEventListener('click', function() {
 
      // check if context is in suspended state (autoplay policy)
-     if (audio_context.state === 'suspended') {
+     if (audio_context.state === 'suspended') { // changed the context here to one init'd above
         audio_context.resume();
      }
-
      // play or pause track depending on state
      if (this.dataset.playing === 'false') {
          audioElement.play();
@@ -61,24 +58,6 @@ const track = audio_context.createMediaElementSource(audioElement);
  audioElement.addEventListener('ended', () => {
     playButton.dataset.playing = 'false';
 }, false);
-
-// Slider handler to change the 'osc' frequency
-function changeFreq(event)
-{
-    var val = event.target.value;
-    val = parseFloat(val);
-    console.log(val);
-    audioinput_dsp.setParamValue("/audioinput/freq", val);
-}
-
-// Slider handler to change the 'osc' volume
-function changeVolume(event)
-{
-    var val = event.target.value;
-    val = parseFloat(val);
-    console.log(val);
-    audioinput_dsp.setParamValue("/audioinput/volume", val);
-}
 
 function changeTDepth(event)
 {
@@ -97,34 +76,32 @@ function changeTFreq(event)
     audioinput_dsp.setParamValue("/audioinput/tfreq", val);
 }
 
-function changeTWet(event)
+function changeFWet(event)
 {
     var val = event.target.value;
     val = parseFloat(val);
     console.log(val);
-    audioinput_dsp.setParamValue("/audioinput/twet", val);
+    audioinput_dsp.setParamValue("/audioinput/fwet", val);
 }
 
-function startosc()
+function startaudioinput()
 {
     // Create the Faust generated node
     var pluginURL = ".";
-    var plugin = new Faustosc(audio_context, pluginURL); // why is this called faustosc specifically?
+    var plugin = new Faustaudioinput(audio_context, pluginURL); // why is this called faustosc specifically?
     plugin.load().then(node => {
                             audioinput_dsp = node;
                             console.log(audioinput_dsp.getJSON());
                             // Print paths to be used with 'setParamValue'
                             console.log(audioinput_dsp.getParams());
-
-                            // Do I connect the track to faust here?
-                            track.connect(audioinput_dsp); // track connect to faust destination?
+                            track.connect(audioinput_dsp);
                             // Connect it to output as a regular WebAudio node
                             audioinput_dsp.connect(audio_context.destination);
                       });
 }
 
 // Load handler
-window.addEventListener('load', startosc);
+window.addEventListener('load', startaudioinput);
 
 // To activate audio on iOS
 window.addEventListener('touchstart', function() {
@@ -133,12 +110,9 @@ window.addEventListener('touchstart', function() {
                         var buffer = audio_context.createBuffer(1, 1, 22050);
                         var source = audio_context.createBufferSource();
                         source.buffer = buffer;
-                        
                         // connect to output (your speakers)
                         source.connect(audio_context.destination);
-                        
                         // should I be adding the connect track to faust here?
-
                         // play the file
                         source.start();
                         

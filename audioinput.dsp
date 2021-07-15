@@ -9,11 +9,14 @@ with{
 };
 
 tremolo(fr,dep) = _*(1-(os.osc(fr)*0.5 + 0.5)*dep);
-f = hslider("tfreq [unit:Hz]",10,0.1,100,0.01);
-w = hslider("twet",0.5,0,1,0.01);
-d = hslider("tdepth",0.5,0,1,0.01);
+f = hslider("ffreq [unit:Hz]",10,0.1,100,0.01);
+w = hslider("fwet",0.5,0,1,0.01);
+d = hslider("fdepth",0.5,0,1,0.01);
+
+tf = hslider("tfreq [unit:Hz]",10,0.1,100,0.01);
+td = hslider("tdepth",0.5,0,1,0.01);
 
 gain = hslider("gain [knob:2] [midi:ctrl 7]", 0.5, 0, 1, 0.01);
 gate = button("gate [switch:1]");
 
-process = + :  flanger(f,w,d) : tremolo(5,1) <: _,_;
+process = + :  flanger(f,w,d) : tremolo(tf,td) <: _,_;
